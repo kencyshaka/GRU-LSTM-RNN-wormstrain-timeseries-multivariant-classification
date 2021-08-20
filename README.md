@@ -4,7 +4,7 @@ This project is an effort in the behavioural quantification field by examining a
 The implementation is in python, PyTorch, pytorch-lightning and wandb.
 
 ### To download the dataset
- > download_zenosh.sh  download_skeleton.txt <specify output file> 
+ > download_zenosh.sh  download_skeleton.txt <specify the output file (output)> 
  
 ### To run the experiment 
  >python src/training.py  <specify the dimension reduction method (PCA|ICA)>
