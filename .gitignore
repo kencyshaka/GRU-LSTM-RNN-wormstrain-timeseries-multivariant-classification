@@ -5,7 +5,9 @@
 #large files
 lightnings_logs/*
 wandb/
-
+data/dataset/
+data/skeleton/
+data/getdatajob.sh.*
 
 #Byte-compiled / optimized / DLL files
 __pycache__
