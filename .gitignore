@@ -6,6 +6,7 @@
 lightnings_logs/*
 wandb/
 data/dataset/
+data/skeleton/
 
 #Byte-compiled / optimized / DLL files
 __pycache__
