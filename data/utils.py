@@ -6,6 +6,7 @@ import numpy as np
 import pickle
 import os
 import collections
+from sklearn.decomposition import PCA, FastICA
 
 # A function to convert the class into intergers
 def class_to_int(class_list):
@@ -89,3 +90,77 @@ def get_skeleton_array(f):
     
     return tx, ty        
 
+def PCA_eigenWorms(angleArrayCombined,numEigWorms):
+
+    angleArrayCombined = angleArrayCombined[~np.isnan(angleArrayCombined).any(axis=1)]       #removes rows containing nan. values
+
+    pca = PCA(n_components=numEigWorms)
+    pca.fit(angleArrayCombined)
+    eigenWorms = pca.components_
+    eigenValues = pca.explained_variance_
+    matrix = pca.fit_transform(angleArrayCombined)
+
+    variance = sum(pca.explained_variance_ratio_)
+    print("the variance is",variance)
+    return eigenValues,eigenWorms,matrix,variance
+
+def ICA_eigenWorms(angleArrayCombined,numEigWorms):
+
+    angleArrayCombined = angleArrayCombined[~np.isnan(angleArrayCombined).any(axis=1)]       #removes rows containing nan. values
+    print(angleArrayCombined.shape)
+    ica = FastICA(n_components=numEigWorms)
+    ica.fit(angleArrayCombined)
+    eigenWorms = ica.components_
+    matrix = ica.fit_transform(angleArrayCombined)
+    print("ICA variation",ica.get_params)
+    return eigenWorms,matrix
+
+def makeAngleArray(x,y):
+    # initialize arrays
+    numFrames,lengthX = x.shape
+#    print(numFrames,lengthX)
+    angleArray = np.zeros((numFrames, lengthX-1));
+    meanAngles = np.zeros((numFrames, 1),dtype=np.complex_);
+
+    #print("before****************")
+    #print(meanAngles.shape, angleArray.shape)
+
+
+
+    for i in range (numFrames):
+        #calculate the x and y differences
+        dX = np.diff(x[i])
+        dY = np.diff(y[i])
+#         print("the shape is ",angleArray[i].shape)
+        angleArray[i] = np.arctan2(dY, dX);
+        angleArray[i] = np.unwrap(angleArray[i])
+        meanAngles[i] = np.mean(angleArray[i])
+
+        angleArray[i] = angleArray[i] - meanAngles[i]
+
+#     print("the values of the angle is ",angleArray[5])
+#     print("the values of the mean angle is ",meanAngles[5])
+
+    angleArray = angleArray[~np.isnan(angleArray).any(axis=1)]       #removes rows containing nan. values
+    meanAngles = meanAngles[~np.isnan(meanAngles).any(axis=1)]       #removes rows containing nan. values
+   # print("after ****************")
+   # print(angleArray.shape, meanAngles.shape)
+
+    return meanAngles,angleArray
+
+def eigenWormProject(eigenWorms, angleArray, numEigWorms):
+    an_array = np.empty((angleArray.shape[0], numEigWorms))
+
+    an_array[:] = np.NaN
+
+#     print(an_array)
+    projectedAmps = an_array
+
+    #Calculate time series of projections onto eigenworms
+    for i in range(angleArray.shape[0]):
+        rawAngles = angleArray[i,:]
+        for j in range(numEigWorms):
+
+            projectedAmps[i,j] = np.sum(eigenWorms[j,:]*rawAngles)
+#    print("the projected Amps Shape",projectedAmps.shape)
+    return projectedAmps

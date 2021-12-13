@@ -7,188 +7,107 @@ import pickle
 import math
 import scipy.linalg as la
 from sklearn.decomposition import PCA, FastICA
-from mpi4py import MPI
+from utils import *
 
 
+def run():
 
-def makeAngleArray(x,y):
-    # initialize arrays
-    numFrames,lengthX = x.shape
-#    print(numFrames,lengthX)
-    angleArray = np.zeros((numFrames, lengthX-1));
-    meanAngles = np.zeros((numFrames, 1),dtype=np.complex_);
+    xf = {}
+    yf = {}
+    for i in range (5):
+ 
+        xf[i] = h5py.File("skeleton/x_skeletonN2"+str(i)+".h5", "r")
+        yf[i]= h5py.File("skeleton/y_skeletonN2"+str(i)+".h5", "r")
 
-    #print("before****************")
-    #print(meanAngles.shape, angleArray.shape)
+        dsetr = xf[i]["x"]
+        print(dsetr)
 
+    for file in range (0,1):
+        for i in range(len(xf[file]['/x'])):   # all  videos concatenated together 
 
+            print("in the loop",i)
+            meanAngles, angleArray = makeAngleArray(xf[file]['/x'][str(i)],yf[file]['/y'][str(i)])
 
-    for i in range (numFrames):
-        #calculate the x and y differences
-        dX = np.diff(x[i])
-        dY = np.diff(y[i])
-#         print("the shape is ",angleArray[i].shape)
-        angleArray[i] = np.arctan2(dY, dX);
-        angleArray[i] = np.unwrap(angleArray[i])
-        meanAngles[i] = np.mean(angleArray[i])
-        
-        angleArray[i] = angleArray[i] - meanAngles[i]
-
-#     print("the values of the angle is ",angleArray[5])
-#     print("the values of the mean angle is ",meanAngles[5])
-
-    angleArray = angleArray[~np.isnan(angleArray).any(axis=1)]       #removes rows containing nan. values
-    meanAngles = meanAngles[~np.isnan(meanAngles).any(axis=1)]       #removes rows containing nan. values
-   # print("after ****************")
-   # print(angleArray.shape, meanAngles.shape)
-
-    return meanAngles,angleArray
-
-def eigenWormProject(eigenWorms, angleArray, numEigWorms):
-    an_array = np.empty((angleArray.shape[0], numEigWorms))
-
-    an_array[:] = np.NaN
-
-#     print(an_array)
-    projectedAmps = an_array
-
-    #Calculate time series of projections onto eigenworms
-    for i in range(angleArray.shape[0]):
-        rawAngles = angleArray[i,:]
-        for j in range(numEigWorms):
-            projectedAmps[i,j] = np.sum(eigenWorms[j,:]*rawAngles)
-#    print("the projected Amps Shape",projectedAmps.shape)
-    return projectedAmps
-
-def PCA_eigenWorms(angleArrayCombined,numEigWorms):
-
-    angleArrayCombined = angleArrayCombined[~np.isnan(angleArrayCombined).any(axis=1)]       #removes rows containing nan. values
-
-    pca = PCA(n_components=numEigWorms)
-    pca.fit(angleArrayCombined)
-    eigenWorms = pca.components_
-    eigenValues = pca.explained_variance_
-    matrix = pca.fit_transform(angleArrayCombined)
-
-    variance = sum(pca.explained_variance_ratio_[0:4])
-    return eigenValues,eigenWorms,matrix,variance
-
-def ICA_eigenWorms(angleArrayCombined,numEigWorms):
-
-    angleArrayCombined = angleArrayCombined[~np.isnan(angleArrayCombined).any(axis=1)]       #removes rows containing nan. values
-#     print(angleArrayCombined.shape)
-    ica = FastICA(n_components=numEigWorms)
-    ica.fit(angleArrayCombined)
-    eigenWorms = ica.components_
-    matrix = ica.fit_transform(angleArrayCombined)
-#    print("ICA variation",ica.get_params)
-    return eigenWorms,matrix
-
-
-class_name = "N2"
-print("Trying to get the saved data skeleton")
-filenameX = "x_skeleton"+class_name+".h5"
-filenameY = "y_skeleton"+class_name+".h5"
-filenameX1 = "x_skeleton"+class_name+"1.h5"
-filenameY1 = "y_skeleton"+class_name+"1.h5"
-print("the files are ",filenameX)
-print("the class being eXplored is ",class_name)
-
-xf = h5py.File(filenameX, "r")
-yf = h5py.File(filenameY, "r")
-xf1 = h5py.File(filenameX1, "r")
-yf1 = h5py.File(filenameY1, "r")
-
-
-
-dsetr = xf["x"]
-print("the length is",len(dsetr))
-if dsetr:
-    print("datset accessible")
-else:
-    print("dataset inaccessible")
-
-print(xf['/x'][str(1)][0])
-print(yf['/y'][str(1)][0])
-
-
-
-print (" the length of the first loop",len(xf['/x']))
-
-for i in range(500):   # len(xf['/x']) length of the list , not we only need for 10 videos and concatenate together 
-
-        print("in the loop",i)
-        meanAngles, angleArray = makeAngleArray(xf['/x'][str(i)],yf['/y'][str(i)])
-
-        if i == 0 :
+            if i == 0 :
                 angleArrayCombined = angleArray
                 meanAnglesCombined = meanAngles
          
-        else:
+            else:
                angleArrayCombined = np.concatenate((angleArrayCombined,angleArray), axis=0)
                meanAnglesCombined = np.concatenate((meanAnglesCombined,meanAngles), axis=0)
 
-#print("going to the second loop ***************************************************************")
+    print("the initial combined angle",angleArrayCombined.shape)
+    
+    for file in range (1,5):
+    
+        for i in range(len(xf[file]['/x'])):   
 
-#print (" the length of the second loop",len(xf1['/x']))
+            print("in the loop",i)
+            meanAngles, angleArray = makeAngleArray(xf[file]['/x'][str(i)],yf[file]['/y'][str(i)])
+        
+            angleArrayCombined = np.concatenate((angleArrayCombined,angleArray), axis=0)
+            meanAnglesCombined = np.concatenate((meanAnglesCombined,meanAngles), axis=0) 
+    
+    ICAvectors,ICAmatrix = ICA_eigenWorms(angleArrayCombined,6)
+    ICAfeatures = np.concatenate((ICAmatrix,meanAnglesCombined), axis=1)
 
-#for i in range(270):   # len(xf['/x']) length of the list , not we only need for 10 videos and concatenate together 
+    values, PCAvectors,PCAmatrix,variance = PCA_eigenWorms(angleArrayCombined,4)
+    PCAfeatures = np.concatenate((PCAmatrix,meanAnglesCombined), axis=1)
+    
+    print("the shape of the N2 PCA features", PCAfeatures.shape)
+    print("the shape of the N2 PCA vectors", PCAvectors.shape)
+    print("the shape of the N2 ICA features", ICAfeatures.shape)
+    print("the shape of the N2 ICA vector", ICAvectors.shape)
+    print("the eigen worms shape PCA",values.shape)
 
-#        print("in the loop",i)
-#        meanAngles, angleArray = makeAngleArray(xf1['/x'][str(i)],yf1['/y'][str(i)])
-                               
-#        angleArrayCombined = np.concatenate((angleArrayCombined,angleArray), axis=0)
-#        meanAnglesCombined = np.concatenate((meanAnglesCombined,meanAngles), axis=0)         
-ICAvectors,ICAmatrix = ICA_eigenWorms(angleArrayCombined,6)
-ICAfeatures = np.concatenate((ICAmatrix,meanAnglesCombined), axis=1)
+    print("saving the dataset  ***************************************************************")
+    class_name =  "N2"
+    
+    saving_file_pkl("PCA_N2_eigenworms",values)
+    saving_file_pkl("PCA_N2_variance",variance)
+    
+    filenameX = "features/ICA_"+class_name+"_features.h5"
+    filenameY = "features/PCA_"+class_name+"_features.h5"
+    fx = h5py.File(filenameX, 'w')
+    fy = h5py.File(filenameY, 'w')
 
-values, PCAvectors,PCAmatrix,variance = PCA_eigenWorms(angleArrayCombined,8)
-PCAfeatures = np.concatenate((PCAmatrix[:,0:4],meanAnglesCombined), axis=1)
+    grpx=fx.create_group('ICA')
+    grpx.create_dataset("feature",data=ICAfeatures)
 
-print("the length of the PCA feature", len(PCAfeatures))
-#print("the shape of the feature", PCAfeaturesAQ2947[0].shape)
+    grpy=fy.create_group('PCA')
+    grpy.create_dataset("feature",data=PCAfeatures)
 
-print("saving the dataset  ***************************************************************")
+    fx.close()
+    fy.close()
 
-filenameX = "ICA_1"+class_name+"_features.h5"
-filenameY = "PCA_1"+class_name+"_features.h5"
-fx = h5py.File(filenameX, 'w')
-fy = h5py.File(filenameY, 'w')
+    filename1 = "features/ICA_"+class_name+"_components.h5"
+    filename2 = "features/PCA_"+class_name+"_components.h5"
+    ica = h5py.File(filename1, 'w')
+    pca = h5py.File(filename2, 'w')
 
-grpx=fx.create_group('ICA')
-grpx.create_dataset("feature",data=ICAfeatures)
+    grpx=ica.create_group('ICA')
+    grpx.create_dataset("component",data=ICAvectors)
 
-grpy=fy.create_group('PCA')
-grpy.create_dataset("feature",data=PCAfeatures)
+    grpy=pca.create_group('PCA')
+    grpy.create_dataset("component",data=PCAvectors)
 
-fx.close()
-fy.close()
+    ica.close()
+    pca.close()
 
-filename1 = "ICA_1"+class_name+"_components.h5"
-filename2 = "PCA_1"+class_name+"_components.h5"
-ica = h5py.File(filename1, 'w')
-pca = h5py.File(filename2, 'w')
+    print("Trying to get the saved data")
+    xf = h5py.File(filenameX, "r")
+    
+    dsetr = xf["ICA"]
 
-grpx=ica.create_group('ICA')
-grpx.create_dataset("component",data=ICAvectors)
+    if dsetr:
+        print("datset accessible")
+    else:
+        print("dataset inaccessible")
 
-grpy=pca.create_group('PCA')
-grpy.create_dataset("component",data=PCAvectors)
+    print("the length after retrieval",len(xf['/ICA']) )
+    print(xf['/ICA']['feature'][()].shape)
+    print("the length after retrieval",len(xf['/ICA']['feature']) )
 
-ica.close()
-pca.close()
 
-print("Trying to get the saved data")
-xf = h5py.File(filenameX, "r")
-# yf = h5py.File(filenameY, "r")
-# print(xf)
-dsetr = xf["ICA"]
-
-if dsetr:
-    print("datset accessible")
-else:
-    print("dataset inaccessible")
-
-print("the length after retrieval",len(xf['/ICA']) )
-print(xf['/ICA']['component'][()].shape)
-print("the length after retrieval",len(xf['/ICA']['component']) )
+if __name__ == '__main__':
+    run()

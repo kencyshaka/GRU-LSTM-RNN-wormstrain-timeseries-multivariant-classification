@@ -4,7 +4,7 @@
 #Request some time- min 15 mins - max 48 hours
 #$ -l h_rt=24:00:00
 
-#$ -l coproc_p100=2
+#$ -l coproc_v100=2
 
 #$ -l disk_out=output
 

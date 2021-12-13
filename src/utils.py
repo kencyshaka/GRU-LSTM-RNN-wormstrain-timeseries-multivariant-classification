@@ -26,9 +26,9 @@ def data_splitter(filename,tag_feature):
     sequences = []
     print("length of the files",len(filename))
     
-    for i in range(len(filename)):
+    for i in range(CLASS_SIZE):
         
-        features = h5py.File(filename[i], "r")
+        features = h5py.File(FILENAME+tag_features+"_"+CLASS_NAMES[i]+"_features.h5", "r")
         label = CLASS_INDEX[i]
         
         print("inside with class ", label)

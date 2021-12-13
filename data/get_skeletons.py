@@ -16,10 +16,10 @@ def run():
     class_list = retrieve_pkl_file(CLASS_INT_TO_WORD)
     features = []
     
-
-    for index in range(len(class_list)):
+    print("it is working") 
+    for index in range(274,280):
         print("the class being extracted is:",class_list[index])
-        print("the number of all videos is", len(list_path))
+        print("the class index is", index)
         
         skeleton_dataframe_collectionx = []
         skeleton_dataframe_collectiony = []
@@ -27,8 +27,9 @@ def run():
         for i in range(len(list_path)):
             s = h5py.File(list_path[i],mode='r')
            
-            print(i,"********")
+           # print(i,"********")
             if get_strain_name(s) == class_list[index]:
+                print(i,"********")
                 x, y = get_skeleton_array(s['coordinates/skeletons'])
                 skeleton_dataframe_collectionx.append(x)
                 skeleton_dataframe_collectiony.append(y)
@@ -71,7 +72,7 @@ def run():
             print("dataset inaccessible")
 
         print(xf['/x'][str(0)][0])
-        print(yf['/y'][str(0)][0])
+       # print(yf['/y'][str(0)][0])
         
         xf.close()
         yf.close()

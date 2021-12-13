@@ -7,7 +7,11 @@ lightnings_logs/*
 wandb/
 data/dataset/
 data/skeleton/
+data/output/
+data/features/
+data/features1/
 data/getdatajob.sh.*
+data/getskeletonjob.sh.*
 
 #Byte-compiled / optimized / DLL files
 __pycache__

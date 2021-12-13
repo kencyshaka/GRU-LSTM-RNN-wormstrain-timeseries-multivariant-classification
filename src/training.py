@@ -28,12 +28,12 @@ dimension = args.dimension_reduction
 print("the selected dimension reduction of the features is ",dimension)
 
 if dimension == 'PCA':
-    filename = FILENAME_PCA
+    filename = FILENAME
     tag_feature = 'PCA'
     n_features = 5
 
 else:
-    filename = FILENAME_ICA
+    filename = FILENAME
     tag_feature = 'ICA'
     n_features = 7
     
